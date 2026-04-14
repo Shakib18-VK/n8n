@@ -7,7 +7,7 @@ app = FastAPI(title="AI Node Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # production me frontend URL daalna
+    allow_origins=["*"],  # production me frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,7 +20,9 @@ graph = build_graph()   # 🔥 graph ek baar load hota hai
 def execute(req: QueryRequest):
     state = {
         "query": req.query,
-        "route": ""   # important for conditional routing
+        "route": "",          # classifier set karega
+        "llm_result": "",     # final output
+        "messages": []        # 🔥 REQUIRED for agent + tools
     }
 
     result = graph.invoke(state)
