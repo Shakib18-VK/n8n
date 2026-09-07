@@ -14,23 +14,23 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import axios from "axios";
 import { Save, Send, Terminal, Cpu, Zap, Play, Plus, Menu, Activity, Loader2 } from "lucide-react";
-import { Code, Stethoscope, Sprout, Briefcase,CloudRain, Box, Trophy, FileText, Scale, Network, Bot, Sparkles, Search } from "lucide-react";
+import { Code, Stethoscope, Sprout,ChefHat, Briefcase,CloudRain, Box, Trophy, FileText, Scale, Network, Bot, Sparkles, Search } from "lucide-react";
 
 const NODE_TYPES_CONFIG = [
-  { id: "coding", label: "Coding Assistant", color: "bg-blue-500", icon: Code },
-  { id: "doctor", label: "Medical AI", color: "bg-red-500", icon: Stethoscope },
-  { id: "farmer", label: "Agri Expert", color: "bg-green-500", icon: Sprout },
-  { id: "advice", label: "Legal Advice", color: "bg-purple-500", icon: Scale },
-  { id: "classifier", label: "Classifier / Router", color: "bg-orange-500", icon: Network },
-  { id: "general", label: "General AI", color: "bg-gray-500", icon: Bot },
-  { id: "train", label: "Train AI", color: "bg-purple-700 border border-purple-400/30", icon: Sparkles },
-  { id: "web", label: "Real time", color: "bg-purple-500 border border-purple-400/30", icon: Search },
-  { id: "job", label: "Job Assistant", color: "bg-indigo-500", icon: Briefcase },
-  { id: "youtube", label: "Summerize Video", color: "bg-indigo-500", icon: FileText },
-  { id: "travel_node", label: "Travel AI", color: "bg-indigo-500", icon: Box },
-  { id: "sports", label: "Sports AI", color: "bg-indigo-500", icon: Trophy },
-  { id: "weather_decision", label: "Weather AI", color: "bg-indigo-500", icon: CloudRain },
-  
+  { id: "coding", label: "Coding Assistant", color: "bg-blue-600", icon: Code },
+  { id: "doctor", label: "Medical AI", color: "bg-rose-600", icon: Stethoscope },
+  { id: "farmer", label: "Agri Expert", color: "bg-emerald-600", icon: Sprout },
+  { id: "advice", label: "Legal Advice", color: "bg-amber-600", icon: Scale },
+  { id: "classifier", label: "Classifier / Router", color: "bg-orange-600", icon: Network },
+  { id: "general", label: "General AI", color: "bg-slate-600", icon: Bot },
+  { id: "train", label: "Train AI", color: "bg-purple-600 border border-purple-400/30", icon: Sparkles },
+  { id: "web", label: "Real time", color: "bg-cyan-600 border border-cyan-400/30", icon: Search },
+  { id: "job", label: "Job Assistant", color: "bg-indigo-600", icon: Briefcase },
+  { id: "youtube", label: "Summerize Video", color: "bg-red-700", icon: FileText },
+  { id: "travel_node", label: "Travel AI", color: "bg-teal-600", icon: Box },
+  { id: "sports", label: "Sports AI", color: "bg-yellow-600", icon: Trophy },
+  { id: "weather_decision", label: "Weather AI", color: "bg-sky-600", icon: CloudRain },
+  { id: "restaurant_node", label: "Restaurant AI", color: "bg-pink-600", icon: ChefHat },
 ];
 
 const API_URL = "http://localhost:4000/api/v1";
@@ -148,7 +148,8 @@ export default function BuilderPage() {
         "youtube" : "Summerize Video",
         "travel_node" : "Travel AI",
         "sports" : "Sports AI",
-        "weather_decision" : "Weather AI"
+        "weather_decision" : "Weather AI",
+        "restaurant_node" : "Restaurant AI"
       };
       const targetLabel = routeMap[route];
 

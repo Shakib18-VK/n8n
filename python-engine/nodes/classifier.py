@@ -32,7 +32,7 @@ accurate, and useful summary.
 useful, practical information.
 - get_live_cricket_score-> Get live cricket match information. Use this tool when the user asks about: Returns live cricket match data from the Cricbuzz API.
 - get_weather -> Get current and 5-day weather forecast for a location.
-
+- restaurant_node -> Use this category when the user is asking about restaurants, cafes, food places, dining places, or places to eat.
   Use for:
   - weather
   - temperature
