@@ -4,7 +4,7 @@ from graph.tools import ALL_TOOLS
 import os
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="gemini-3.5-flash-lite",
     api_key=os.getenv("GEMINI_API_KEY")
 )
 

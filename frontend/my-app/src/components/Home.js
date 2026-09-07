@@ -36,9 +36,11 @@ export default function N8NStyleLanding() {
                 Build your first flow <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>
+            <Link href={'/demo'}>
             <button className="px-10 py-6 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl font-black text-xl hover:border-slate-900 transition-all active:scale-95 flex items-center gap-3">
               <PlayCircle size={24} /> Live Demo
             </button>
+            </Link>
           </div>
 
           {/* --- WORKFLOW VISUAL (The Image You Shared) --- */}

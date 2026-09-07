@@ -7,27 +7,44 @@ app = FastAPI(title="AI Node Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # production me frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-graph = build_graph()   # 🔥 graph ek baar load hota hai
+graph = build_graph()
 
 
 @app.post("/execute")
 def execute(req: QueryRequest):
+
     state = {
         "query": req.query,
-        "route": "",          # classifier set karega
-        "llm_result": "",     # final output
-        "messages": []        # 🔥 REQUIRED for agent + tools
+        "route": "",
+        "llm_result": "",
+        "messages": []
     }
 
     result = graph.invoke(state)
 
+    llm_result = result.get("llm_result", "")
+
+    # Gemini/LangChain response se ONLY text nikalo
+    if isinstance(llm_result, list):
+        text = ""
+
+        for item in llm_result:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text = item.get("text", "")
+                break
+
+        llm_result = text
+
+    elif isinstance(llm_result, dict):
+        llm_result = llm_result.get("text", "")
+
     return {
-        "result": result.get("llm_result"),
-        "route": result.get("route")
+        "result": llm_result,
+        "route": result.get("route", "")
     }

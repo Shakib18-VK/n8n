@@ -6,6 +6,8 @@ export default function NodeSidebar({ addNode }) {
       <button onClick={() => addNode("doctor")}>Doctor</button>
       <button onClick={() => addNode("farmer")}>Farmer</button>
       <button onClick={() => addNode("advice")}>Advice</button>
+      <button onClick={() => addNode("train")}>Train</button>
+      <button onClick={() => addNode("web")}>Real Time</button>
     </div>
   );
 }

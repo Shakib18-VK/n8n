@@ -737,10 +737,13 @@ If the user says "Bye", "Goodbye", "See you", or similar:
    - Link on a separate line with 
  Provide appointment links in clean, readable format when needed.   
 - Summarize conversation in 5 lines at the end
+
+Note ---> "You must return your final answer strictly as a plain text string. Never wrap the response in a JSON object or use keys like type, text, or extras. Output only raw text."
+
 """
 
     response = client.models.generate_content(
-        model="gemini-flash-latest",
+        model="gemini-3.5-flash-lite",
         contents=[
             {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
             {"role": "user", "parts": [{"text": query}]},

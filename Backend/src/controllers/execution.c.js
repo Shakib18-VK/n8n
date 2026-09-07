@@ -36,8 +36,18 @@ export const createExecution = async (req, res) => {
       query: input.query || input
     });
 
+    // Safe extraction: Ensure pyRes.data.result is never an raw object with {type, text, extras}
+    let rawResult = pyRes.data.result;
+    let cleanResult = "";
+
+    if (typeof rawResult === "object" && rawResult !== null) {
+      cleanResult = rawResult.text || JSON.stringify(rawResult, null, 2);
+    } else {
+      cleanResult = String(rawResult || "");
+    }
+
     execution.output = {
-      result: pyRes.data.result,
+      result: cleanResult,
       route: pyRes.data.route
     };
     execution.status = "success";

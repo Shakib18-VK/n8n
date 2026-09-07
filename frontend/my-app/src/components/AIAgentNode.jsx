@@ -8,6 +8,9 @@ const icons = {
   "Legal Advice": <Scale size={18} className="text-amber-400" />,
   "Classifier / Router": <Fingerprint size={18} className="text-indigo-400" />,
   "General AI": <Bot size={18} className="text-slate-400" />,
+  "Train AI": <GraduationCap size={18} className="text-purple-400" />,
+  "Real Time": <GraduationCap size={18} className="text-slate-400" />,
+  "Job Real Time": <GraduationCap size={18} className="text-amber-500" />,
   "🤖 AI Agent (Master)": <Zap size={20} className="text-blue-500 fill-blue-500" />
 };
 

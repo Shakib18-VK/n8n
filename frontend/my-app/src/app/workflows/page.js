@@ -14,22 +14,34 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import axios from "axios";
 import { Save, Send, Terminal, Cpu, Zap, Play, Plus, Menu, Activity, Loader2 } from "lucide-react";
+import { Code, Stethoscope, Sprout, Briefcase,CloudRain, Box, Trophy, FileText, Scale, Network, Bot, Sparkles, Search } from "lucide-react";
 
 const NODE_TYPES_CONFIG = [
-  { id: "coding", label: "Coding Assistant", color: "bg-blue-500" },
-  { id: "doctor", label: "Medical AI", color: "bg-red-500" },
-  { id: "farmer", label: "Agri Expert", color: "bg-green-500" },
-  { id: "advice", label: "Legal Advice", color: "bg-purple-500" },
-  { id: "classifier", label: "Classifier / Router", color: "bg-orange-500" },
-  { id: "general", label: "General AI", color: "bg-gray-500" },
+  { id: "coding", label: "Coding Assistant", color: "bg-blue-500", icon: Code },
+  { id: "doctor", label: "Medical AI", color: "bg-red-500", icon: Stethoscope },
+  { id: "farmer", label: "Agri Expert", color: "bg-green-500", icon: Sprout },
+  { id: "advice", label: "Legal Advice", color: "bg-purple-500", icon: Scale },
+  { id: "classifier", label: "Classifier / Router", color: "bg-orange-500", icon: Network },
+  { id: "general", label: "General AI", color: "bg-gray-500", icon: Bot },
+  { id: "train", label: "Train AI", color: "bg-purple-700 border border-purple-400/30", icon: Sparkles },
+  { id: "web", label: "Real time", color: "bg-purple-500 border border-purple-400/30", icon: Search },
+  { id: "job", label: "Job Assistant", color: "bg-indigo-500", icon: Briefcase },
+  { id: "youtube", label: "Summerize Video", color: "bg-indigo-500", icon: FileText },
+  { id: "travel_node", label: "Travel AI", color: "bg-indigo-500", icon: Box },
+  { id: "sports", label: "Sports AI", color: "bg-indigo-500", icon: Trophy },
+  { id: "weather_decision", label: "Weather AI", color: "bg-indigo-500", icon: CloudRain },
+  
 ];
 
 const API_URL = "http://localhost:4000/api/v1";
 
-// --- CUSTOM NODE WITH EXECUTION STATES ---
+// --- CUSTOM NODE WITH EXECUTION STATES & ICON SUPPORT ---
 const CustomNodeUI = ({ data, selected }) => {
   const isMaster = data.label.includes("Master");
   const isExecuting = data.status === "executing";
+  
+  // Resolve Icon Component safely
+  const IconComponent = data.icon || (isMaster ? Zap : Cpu);
 
   return (
     <div className={`relative px-4 py-4 rounded-2xl border-2 transition-all duration-500 shadow-2xl 
@@ -42,8 +54,11 @@ const CustomNodeUI = ({ data, selected }) => {
       
       <div className="flex items-start gap-3 w-full overflow-hidden">
         <div className={`p-2.5 rounded-xl shrink-0 ${isMaster ? 'bg-blue-600 shadow-lg' : 'bg-slate-100'}`}>
-          {isExecuting ? <Loader2 size={18} className="animate-spin text-yellow-500" /> : 
-           isMaster ? <Zap size={18} fill="white" /> : <Cpu size={18} className="text-slate-600" />}
+          {isExecuting ? (
+            <Loader2 size={18} className="animate-spin text-yellow-500" />
+          ) : (
+            <IconComponent size={18} className={isMaster ? "text-white" : "text-slate-600"} />
+          )}
         </div>
         
         <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
@@ -73,7 +88,14 @@ const CustomNodeUI = ({ data, selected }) => {
 const nodeTypes = { default: CustomNodeUI };
 
 export default function BuilderPage() {
-  const [nodes, setNodes] = useState([{ id: "master", type: "default", data: { label: "🤖 AI Agent (Master)", status: "idle" }, position: { x: 450, y: 200 } }]);
+  const [nodes, setNodes] = useState([
+    { 
+      id: "master", 
+      type: "default", 
+      data: { label: "🤖 AI Agent (Master)", status: "idle", icon: Zap }, 
+      position: { x: 450, y: 200 } 
+    }
+  ]);
   const [edges, setEdges] = useState([]);
   const [workflowId, setWorkflowId] = useState(null);
   const [chatInput, setChatInput] = useState("");
@@ -88,8 +110,14 @@ export default function BuilderPage() {
     setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#cbd5e1', strokeWidth: 2 } }, eds));
   }, []);
 
-  const addNode = (label) => {
-    const newNode = { id: `node-${Date.now()}`, type: "default", position: { x: 100, y: 400 }, data: { label, status: "idle" } };
+  // Pass configuration object to preserve icon component
+  const addNode = (nodeConfig) => {
+    const newNode = { 
+      id: `node-${Date.now()}`, 
+      type: "default", 
+      position: { x: 100, y: 400 }, 
+      data: { label: nodeConfig.label, status: "idle", icon: nodeConfig.icon } 
+    };
     setNodes((nds) => [...nds, newNode]);
   };
 
@@ -100,7 +128,6 @@ export default function BuilderPage() {
     setLogs(p => [...p, `[INIT]: Kernel Start...`]);
     setChatHistory(p => [...p, { role: "user", text: chatInput }]);
     
-    // 1. Highlight Master Node
     setNodes(nds => nds.map(n => n.id === "master" ? { ...n, data: { ...n.data, status: "executing" } } : n));
 
     try {
@@ -109,11 +136,22 @@ export default function BuilderPage() {
       const route = res.data.output?.route || res.data.route;
       const aiResult = res.data.output?.result || res.data.output;
 
-      // Mapping for Flow Animation
-      const routeMap = { "is_coding_question": "Coding Assistant", "coding": "Coding Assistant", "doctor": "Medical AI", "farmer": "Agri Expert", "advice": "Legal Advice", "general": "General AI" };
+      const routeMap = { 
+        "is_coding_question": "Coding Assistant", 
+        "coding": "Coding Assistant", 
+        "doctor": "Medical AI", 
+        "farmer": "Agri Expert", 
+        "advice": "Legal Advice", 
+        "job": "Job Assistant", 
+        "realtime-search": "Real-Time Search",
+        "general": "General AI" ,
+        "youtube" : "Summerize Video",
+        "travel_node" : "Travel AI",
+        "sports" : "Sports AI",
+        "weather_decision" : "Weather AI"
+      };
       const targetLabel = routeMap[route];
 
-      // 2. Animate the Specific Flow Path
       setEdges(eds => eds.map(e => {
         const targetNode = nodes.find(n => n.id === e.target);
         if (targetNode?.data?.label === targetLabel) {
@@ -122,7 +160,6 @@ export default function BuilderPage() {
         return { ...e, animated: false, style: { stroke: '#e2e8f0', strokeWidth: 1 } };
       }));
 
-      // 3. Highlight Target Node
       setNodes(nds => nds.map(n => {
         if (n.data.label === targetLabel) return { ...n, data: { ...n.data, status: "executing" } };
         return { ...n, data: { ...n.data, status: "idle" } };
@@ -131,7 +168,6 @@ export default function BuilderPage() {
       setLogs(p => [...p, `[ROUTING]: ${route} -> Active Node: ${targetLabel}`]);
       setChatHistory(p => [...p, { role: "ai", text: aiResult }]);
 
-      // Reset after 3 seconds
       setTimeout(() => {
         setNodes(nds => nds.map(n => ({ ...n, data: { ...n.data, status: "idle" } })));
       }, 3000);
@@ -151,13 +187,22 @@ export default function BuilderPage() {
           <button onClick={() => setIsSidebarOpen(false)}><Menu size={18}/></button>
         </div>
         <div className="p-6 space-y-3 flex-grow overflow-y-auto bg-slate-50/50">
-          {NODE_TYPES_CONFIG.map((node) => (
-            <button key={node.id} onClick={() => addNode(node.label)} className="w-full flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all active:scale-95 group">
-              <div className={`w-1.5 h-6 rounded-full ${node.color}`} />
-              <span className="text-xs font-black text-slate-600">{node.label}</span>
-              <Plus size={14} className="ml-auto opacity-0 group-hover:opacity-100 text-blue-500" />
-            </button>
-          ))}
+          {NODE_TYPES_CONFIG.map((node) => {
+            const IconComp = node.icon;
+            return (
+              <button 
+                key={node.id} 
+                onClick={() => addNode(node)} 
+                className="w-full flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all active:scale-95 group text-left"
+              >
+                <div className={`p-2 rounded-lg ${node.color} text-white flex items-center justify-center`}>
+                  <IconComp size={16} />
+                </div>
+                <span className="text-xs font-black text-slate-700">{node.label}</span>
+                <Plus size={14} className="ml-auto opacity-0 group-hover:opacity-100 text-blue-500" />
+              </button>
+            );
+          })}
         </div>
         <div className="p-6 border-t bg-white">
           <button onClick={async () => {

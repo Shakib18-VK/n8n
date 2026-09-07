@@ -1,106 +1,215 @@
-# flake8: noqa
-from typing_extensions import TypedDict
-from langgraph.graph import StateGraph, START, END
-from typing import Annotated, Dict, List, Any, Optional
-from langgraph.graph.message import add_messages
-from langchain_google_genai import ChatGoogleGenerativeAI
-from google import genai
 import os
-from dotenv import load_dotenv
-import requests
-from langchain_core.tools import tool
-from langgraph.prebuilt import ToolNode, tools_condition
-from serpapi.google_search import GoogleSearch
-import smtplib
-from email.message import EmailMessage
 from urllib.parse import urlparse, parse_qs
-from youtube_transcript_api import YouTubeTranscriptApi
-from twilio.rest import Client
-from fastapi import FastAPI
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from langchain_core.runnables import RunnableConfig # <-- Very Important
 
+from dotenv import load_dotenv
+from langchain_core.tools import tool
+from google import genai
+from youtube_transcript_api import YouTubeTranscriptApi
+
+
+# Load environment variables from .env
 load_dotenv()
 
-# --- INITIALIZE CONSTANTS ---
-TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM")
-RAPID_API_KEY = os.getenv("RAPID_API_KEY")
-SERPAPI_KEY = os.getenv("SERPAPI_KEY")
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("EMAIL_PASS")
 
-twilio_client = Client(TWILIO_SID, TWILIO_TOKEN)
+# --------------------------------------------------
+# EXTRACT YOUTUBE VIDEO ID
+# --------------------------------------------------
 
-client = Client(
-    os.getenv("TWILIO_ACCOUNT_SID"),
-    os.getenv("TWILIO_AUTH_TOKEN")
-)
+def extract_video_id(video_link: str):
+    """Extract YouTube video ID from different YouTube URL formats."""
 
+    try:
+        parsed = urlparse(video_link)
+        host = (parsed.hostname or "").lower()
+
+        # https://www.youtube.com/watch?v=VIDEO_ID
+        if host in ["youtube.com", "www.youtube.com"]:
+
+            if parsed.path == "/watch":
+                return parse_qs(parsed.query).get("v", [None])[0]
+
+            # https://www.youtube.com/shorts/VIDEO_ID
+            if parsed.path.startswith("/shorts/"):
+                return parsed.path.split("/shorts/")[1].split("/")[0]
+
+            # https://www.youtube.com/embed/VIDEO_ID
+            if parsed.path.startswith("/embed/"):
+                return parsed.path.split("/embed/")[1].split("/")[0]
+
+        # https://youtu.be/VIDEO_ID
+        if host in ["youtu.be", "www.youtu.be"]:
+            return parsed.path.strip("/").split("/")[0]
+
+        return None
+
+    except Exception as e:
+        print("❌ URL ERROR:", str(e))
+        return None
+
+
+# --------------------------------------------------
+# YOUTUBE SUMMARIZER TOOL
+# --------------------------------------------------
 
 @tool()
-def summarize_video(video_link: str, config: RunnableConfig):
+def summarize_video(video_link: str):
     """
-    Takes a YouTube video link and returns:
-    - Summary
-    - Key Concepts
-    - Important Takeaways
+    Summarize a YouTube video using its available transcript.
+
+    Supports Hindi and English transcripts and generates
+    a structured summary using Gemini.
     """
 
-    # 1. Extract video ID
-    query = parse_qs(urlparse(video_link).query)
-    video_id = query.get("v", [None])[0]
+    print("🎥 VIDEO LINK:", video_link)
+
+    # ----------------------------------------------
+    # Extract video ID
+    # ----------------------------------------------
+
+    video_id = extract_video_id(video_link)
+
+    print("🎥 VIDEO ID:", video_id)
 
     if not video_id:
-        return "❌ Invalid YouTube link"
+        return "❌ Invalid YouTube link."
 
-    # 2. Get API key from LangGraph config (NOT env)
-    api_key = config.get("configurable", {}).get("api_key")
+    # ----------------------------------------------
+    # Gemini API Key
+    # ----------------------------------------------
+
+    api_key = os.getenv("GEMINI_API_KEY")
+
     if not api_key:
-        return "❌ Gemini API key missing"
+        return "❌ GEMINI_API_KEY missing in .env"
 
-    # 3. Fetch transcript
+    # ----------------------------------------------
+    # Get YouTube Transcript
+    # ----------------------------------------------
+
     try:
-        transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
-        transcript = " ".join([item["text"] for item in transcript_data])
-    except Exception:
-        return "❌ Transcript not available for this video"
 
-    # 4. Structured prompt (from second code)
+        print("📄 Fetching transcript...")
+
+        ytt_api = YouTubeTranscriptApi()
+
+        # Try Hindi first, then English
+        transcript_data = ytt_api.fetch(
+            video_id,
+            languages=["hi", "en"]
+        )
+
+        # Convert transcript to plain text
+        transcript = " ".join(
+            snippet.text
+            for snippet in transcript_data
+        )
+
+        if not transcript.strip():
+            return "❌ Transcript is empty."
+
+        print("✅ Transcript fetched successfully")
+        print("📄 Transcript length:", len(transcript))
+
+    except Exception as e:
+
+        print("❌ TRANSCRIPT ERROR:", str(e))
+
+        return (
+            "❌ Transcript not available for this video. "
+            "The video may not have captions available."
+        )
+
+    # ----------------------------------------------
+    # Gemini Prompt
+    # ----------------------------------------------
+
     prompt = f"""
-You are an expert content analyst.
+You are an expert YouTube video summarization AI.
 
-TASK:
-- Ignore ads, greetings, filler words
-- Extract ONLY useful information
+Analyze the complete YouTube transcript and create
+an accurate, clear and useful summary.
 
-Return STRICTLY in this format:
+Return the answer in EXACTLY this structure:
 
 Summary:
-(5–6 lines max)
+
+Write 5-8 clear lines explaining the main content
+of the video.
 
 Key Concepts:
-- concept 1
-- concept 2
-- concept 3
 
-Important Takeaways:
-- takeaway 1
-- takeaway 2
+- Concept 1
+- Concept 2
+- Concept 3
+- Concept 4
+- Concept 5
 
-Transcript:
+Important Points:
+
+- Point 1
+- Point 2
+- Point 3
+- Point 4
+
+Practical Takeaways:
+
+- Takeaway 1
+- Takeaway 2
+- Takeaway 3
+
+Difficulty Level:
+
+Beginner / Intermediate / Advanced
+
+One-Line Conclusion:
+
+Write one sentence describing the main idea
+of the video.
+
+RULES:
+
+- Do not invent information.
+- Use only information present in the transcript.
+- Ignore greetings and unnecessary filler.
+- Ignore advertisements if present.
+- Keep technical terms accurate.
+- If programming concepts are discussed, explain
+  them clearly.
+- Keep the answer concise but useful.
+- If the transcript is Hindi, understand the Hindi
+  content and provide the final summary in English.
+
+TRANSCRIPT:
+
 {transcript}
 """
 
-    # 5. Gemini call (same style as first code)
+    # ----------------------------------------------
+    # Gemini
+    # ----------------------------------------------
+
     try:
-        gen_client = genai.Client(api_key=api_key)
-        res = gen_client.models.generate_content(
-            model="gemini-1.5-flash",
+
+        print("🤖 Sending transcript to Gemini...")
+
+        gen_client = genai.Client(
+            api_key=api_key
+        )
+
+        response = gen_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
             contents=prompt
         )
-        return res.text
+
+        if not response.text:
+            return "❌ Gemini returned an empty response."
+
+        print("✅ Summary generated successfully")
+
+        return response.text
+
     except Exception as e:
+
+        print("❌ GEMINI ERROR:", str(e))
+
         return f"❌ Gemini Error: {str(e)}"

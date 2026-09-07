@@ -130,49 +130,133 @@ Role: {role}
 @tool()
 def find_jobs_from_query(user_query: str) -> Dict:
     """
-    Takes a user career-related query and returns real-time jobs/internships
-    using RapidAPI JSearch (Google Jobs / LinkedIn sources).
+    Find real-time jobs and internships using RapidAPI JSearch.
+
+    Input:
+        Natural language career query from the user.
+
+    Output:
+        Up to 5 relevant jobs with title, company, location,
+        job type, application link and source.
     """
+
+    if not user_query or not isinstance(user_query, str):
+        return {
+            "error": "Job search query is missing or invalid."
+        }
+
+    api_key = os.getenv("RAPID_API_KEY")
+
+    if not api_key:
+        return {
+            "error": "RAPID_API_KEY is not set in environment variables."
+        }
 
     url = "https://jsearch.p.rapidapi.com/search"
 
     headers = {
-        "X-RapidAPI-Key": os.getenv("RAPID_API_KEY"),
+        "X-RapidAPI-Key": api_key,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
     }
 
+    # Convert natural-language query into a cleaner job query
+    query = user_query.lower()
+
+    if "full stack" in query:
+        search_query = "Full Stack Developer"
+    elif "frontend" in query or "front end" in query:
+        search_query = "Frontend Developer"
+    elif "backend" in query or "back end" in query:
+        search_query = "Backend Developer"
+    elif "react" in query:
+        search_query = "React Developer"
+    elif "node" in query or "node.js" in query:
+        search_query = "Node.js Developer"
+    elif "python" in query:
+        search_query = "Python Developer"
+    elif "java" in query:
+        search_query = "Java Developer"
+    else:
+        search_query = user_query
+
     params = {
-        "query": user_query,
+        "query": search_query,
         "page": 1,
         "num_pages": 1,
-        "employment_types": "FULLTIME,INTERN",
-        "date_posted": "week"
+        "date_posted": "month"
     }
 
-    response = requests.get(url, headers=headers, params=params)
+    try:
 
-    if response.status_code != 200:
+        response = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=1545
+        )
+
+        print("💼 JSEARCH STATUS:", response.status_code)
+        print("💼 SEARCH QUERY:", search_query)
+
+        if response.status_code != 200:
+            print("❌ JSEARCH ERROR:", response.text)
+
+            return {
+                "error": "Unable to fetch jobs",
+                "status_code": response.status_code,
+                "raw": response.text
+            }
+
+        response_data = response.json()
+
+        data = response_data.get("data", [])
+
+        results = []
+
+        for job in data[:5]:
+
+            results.append({
+                "job_title": job.get("job_title"),
+                "company": job.get("employer_name"),
+                "location": (
+                    job.get("job_city")
+                    or job.get("job_state")
+                    or job.get("job_country")
+                    or "Not specified"
+                ),
+                "job_type": job.get("job_employment_type"),
+                "apply_link": job.get("job_apply_link"),
+                "source": job.get("job_publisher")
+            })
+
+        if not results:
+            return {
+                "query": search_query,
+                "jobs_found": 0,
+                "results": [],
+                "message": "No jobs found for this search query."
+            }
+
         return {
-            "error": "Unable to fetch jobs",
-            "status_code": response.status_code,
-            "raw": response.text
+            "query": search_query,
+            "jobs_found": len(results),
+            "results": results
         }
 
-    data = response.json().get("data", [])
+    except requests.exceptions.Timeout:
 
-    results = []
-    for job in data[:5]:
-        results.append({
-            "job_title": job.get("job_title"),
-            "company": job.get("employer_name"),
-            "location": job.get("job_city") or job.get("job_country"),
-            "job_type": job.get("job_employment_type"),
-            "apply_link": job.get("job_apply_link"),
-            "source": job.get("job_publisher")
-        })
+        return {
+            "error": "Job search request timed out."
+        }
 
-    return {
-        "query": user_query,
-        "jobs_found": len(results),
-        "results": results
-    }
+    except requests.exceptions.RequestException as e:
+
+        return {
+            "error": f"Job search request failed: {str(e)}"
+        }
+
+    except Exception as e:
+
+        return {
+            "error": f"Unexpected error: {str(e)}"
+        }
