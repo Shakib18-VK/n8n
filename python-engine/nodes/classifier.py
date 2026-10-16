@@ -48,6 +48,15 @@ useful, practical information.
   - What's the temperature in Delhi?
   - Give me the 5-day forecast.
 
+- places_node -> - places → when the user wants to find/search a physical place or business
+  such as restaurants, cafes, hospitals, gyms, hotels, ATMs, petrol pumps,
+  colleges, shops, etc.
+
+- weather → weather-related queries
+- news → news/current events
+- web_search → general information/search queries
+- other → anything else
+
   
 Rules:
 - Respond with ONLY ONE category name
@@ -56,6 +65,29 @@ Rules:
 - No punctuation
 - Lowercase only
 Note ---> "You must return your final answer strictly as a plain text string. Never wrap the response in a JSON object or use keys like type, text, or extras. Output only raw text."
+
+- news_node -> Queries asking for latest, current, recent, today's, breaking,
+  trending, or live news about any topic, person, company, country,
+  technology, sports, politics, entertainment, etc.
+  Examples:
+  "latest AI news"
+  "today's India news"
+  "latest news about OpenAI"
+  "breaking news"
+  "recent news about Trump"
+
+- general:
+  Everything else that does not clearly belong to the above categories.
+
+- youtube_node -> Queries asking to search, find, recommend, or show YouTube videos.
+
+  Examples:
+  "best Java DSA videos"
+  "Java tutorial on YouTube"
+  "React tutorial"
+  "Python ML videos"
+  "latest AI videos on YouTube"
+  "find videos about Next.js"
 
 """
 

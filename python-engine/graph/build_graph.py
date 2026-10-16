@@ -13,6 +13,9 @@ from nodes.general import is_general_question
 from nodes.agent import agent_node
 from nodes.travel_node import travel_node
 from nodes.restaurant_node import restaurant_node
+from nodes.places_node import places_node
+from nodes.news_node import news_node
+from nodes.youtube_node import youtube_node
 
 from tools.train import get_live_train_status
 from tools.web import realtime_web_search
@@ -283,6 +286,9 @@ def build_graph():
     graph.add_node("general", is_general_question)
     graph.add_node("travel_node", travel_node)
     graph.add_node("restaurant_node", restaurant_node)
+    graph.add_node("places_node", places_node)
+    graph.add_node("news_node",  news_node)
+    graph.add_node("youtube_node", youtube_node)
 
     # IMPORTANT
     graph.add_node("train", train_node)
@@ -316,8 +322,10 @@ def build_graph():
             "travel_node" : "travel_node",
             "get_live_cricket_score" : "sports",
             "get_weather" : "weather_decision",
-            "restaurant_node" : "restaurant_node"
-
+            "restaurant_node" : "restaurant_node",
+            "places_node" : "places_node",
+            "news_node" : "news_node",
+            "youtube_node" : "youtube_node"
         }
     )
 
@@ -329,7 +337,9 @@ def build_graph():
     graph.add_edge("general", "agent")
     graph.add_edge("travel_node", "agent")
     graph.add_edge("restaurant_node", "agent")
-    
+    graph.add_edge("places_node", "agent")
+    graph.add_edge("news_node", "agent")
+    graph.add_edge("youtube_node", "agent")
     
 
     # Train → agent

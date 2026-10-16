@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy } from "react";
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -13,8 +13,8 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import axios from "axios";
-import { Save, Send, Terminal, Cpu, Zap, Play, Plus, Menu, Activity, Loader2 } from "lucide-react";
-import { Code, Stethoscope, Sprout,ChefHat, Briefcase,CloudRain, Box, Trophy, FileText, Scale, Network, Bot, Sparkles, Search } from "lucide-react";
+import { Save, Send, Terminal, Cpu, Zap, Play, Plus, Menu, Activity, Loader2, icons } from "lucide-react";
+import { Code, Stethoscope, Sprout,ChefHat, Video, Settings,Newspaper, Briefcase,CloudRain, Box, Trophy, FileText, Scale, Network, Bot, Sparkles, Search } from "lucide-react";
 
 const NODE_TYPES_CONFIG = [
   { id: "coding", label: "Coding Assistant", color: "bg-blue-600", icon: Code },
@@ -31,6 +31,24 @@ const NODE_TYPES_CONFIG = [
   { id: "sports", label: "Sports AI", color: "bg-yellow-600", icon: Trophy },
   { id: "weather_decision", label: "Weather AI", color: "bg-sky-600", icon: CloudRain },
   { id: "restaurant_node", label: "Restaurant AI", color: "bg-pink-600", icon: ChefHat },
+  {
+  "id": "places_node",
+  "label": "Place AI",
+  "color": "bg-red-700",
+  "icon": Settings
+},
+{
+  "id": "news_node",
+  "label": "News AI",
+  "color": "bg-orange-600",
+  "icon": Newspaper
+},
+{
+  "id" : "youtube_node",
+  "label" : "Youtube Search AI",
+  "color" : "bg-cyan-600 border border-cyan-400/30",
+  "icon" : Video
+}
 ];
 
 const API_URL = "http://localhost:4000/api/v1";
@@ -149,7 +167,10 @@ export default function BuilderPage() {
         "travel_node" : "Travel AI",
         "sports" : "Sports AI",
         "weather_decision" : "Weather AI",
-        "restaurant_node" : "Restaurant AI"
+        "restaurant_node" : "Restaurant AI",
+        "places_node" : "Place AI",
+        "news_node" : "News AI",
+        "youtube_node" : "Youtube Search AI"
       };
       const targetLabel = routeMap[route];
 
