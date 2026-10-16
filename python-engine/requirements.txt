@@ -2,6 +2,13 @@ fastapi
 uvicorn[standard]
 langgraph
 langchain
+langchain-core
 langchain-google-genai
+google-genai
+pydantic
+typing-extensions
 python-dotenv
 requests
+google-search-results
+twilio
+youtube-transcript-api
