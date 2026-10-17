@@ -30,7 +30,7 @@ export const createExecution = async (req, res) => {
     });
 
     // 🔥 CALL PYTHON ENGINE
-    const pyRes = await axios.post("http://127.0.0.1:8000/execute", {
+    const pyRes = await axios.post(`${process.env.PYTHON_ENGINE_URL}/execute`, {
       nodes: workflow.nodes,
       edges: workflow.edges,
       query: input.query || input
