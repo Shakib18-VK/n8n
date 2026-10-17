@@ -11,6 +11,10 @@ export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

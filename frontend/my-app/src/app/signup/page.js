@@ -9,6 +9,8 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
