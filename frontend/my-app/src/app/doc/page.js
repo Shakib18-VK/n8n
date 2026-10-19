@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Zap,
   Search,
   Code2,
-  Terminal,
   Cpu,
   Layers,
   Server,
@@ -16,22 +15,17 @@ import {
   ChevronDown,
   ExternalLink,
   BookOpen,
-  Filter,
-  Sparkles,
   AlertTriangle,
   Database,
   Workflow,
   RefreshCw,
-  Clock,
-  Key,
   Globe,
   Radio,
-  FileCode,
   Sliders,
   CheckCircle2,
-  HelpCircle,
-  Hash,
-  Brackets
+  Brackets,
+  Menu,
+  X
 } from 'lucide-react';
 
 const EXPRESSION_ITEMS = [
@@ -490,149 +484,172 @@ n8n webhook`
   }
 ];
 
+const NAV_SECTIONS = [
+  {
+    label: 'Documentation',
+    items: [
+      { id: 'overview', label: 'Architecture & Data Model', icon: BookOpen },
+      { id: 'expressions', label: 'Expressions Cheatsheet', icon: Brackets },
+      { id: 'code', label: 'Code Node Snippets (JS)', icon: Code2 },
+      { id: 'nodes', label: 'Top Core Nodes Guide', icon: Cpu },
+    ],
+  },
+  {
+    label: 'Production',
+    items: [{ id: 'prod', label: 'Self-Hosting & Best Practices', icon: Server }],
+  },
+];
+
+// Shared style for code blocks so long lines scroll inside the box, never the page
+const PRE_BASE = 'max-w-full overflow-x-auto';
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('expressions'); // 'overview', 'expressions', 'code', 'nodes', 'prod'
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [expandedNodes, setExpandedNodes] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile drawer
+  const contentRef = useRef(null);
 
-  // Toast feedback timeout
-  const handleCopy = (text, id) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      // Fallback for browsers / non-HTTPS pages where the Clipboard API is blocked
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    }
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2200);
   };
 
   const toggleNodeExpand = (nodeId) => {
-    setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
+    setExpandedNodes(prev => ({ ...prev, [nodeId]: !(prev[nodeId] ?? true) }));
   };
+
+  const q = searchQuery.toLowerCase();
 
   const filteredExpressions = useMemo(() => {
     return EXPRESSION_ITEMS.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.expression.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.title.toLowerCase().includes(q) ||
+                            item.expression.toLowerCase().includes(q) ||
+                            item.description.toLowerCase().includes(q);
       const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [q, selectedCategory]);
 
   const filteredCodeSnippets = useMemo(() => {
     return CODE_SNIPPETS.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.title.toLowerCase().includes(q) ||
+                            item.code.toLowerCase().includes(q) ||
+                            item.description.toLowerCase().includes(q);
       const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [q, selectedCategory]);
 
   const filteredCoreNodes = useMemo(() => {
-    return CORE_NODES.filter(node => {
-      return node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             node.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             node.type.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-  }, [searchQuery]);
+    return CORE_NODES.filter(node =>
+      node.name.toLowerCase().includes(q) ||
+      node.summary.toLowerCase().includes(q) ||
+      node.type.toLowerCase().includes(q)
+    );
+  }, [q]);
 
   const filteredProdGuides = useMemo(() => {
-    return PROD_GUIDES.filter(guide => {
-      return guide.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             guide.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             guide.category.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-  }, [searchQuery]);
+    return PROD_GUIDES.filter(guide =>
+      guide.title.toLowerCase().includes(q) ||
+      guide.description.toLowerCase().includes(q) ||
+      guide.category.toLowerCase().includes(q)
+    );
+  }, [q]);
 
-  // Reset category filter on tab switch
+  // Reset category filter + scroll to top on tab switch
   useEffect(() => {
     setSelectedCategory('All');
+    if (contentRef.current) contentRef.current.scrollTo({ top: 0 });
   }, [activeTab]);
 
+  const selectTab = (id) => {
+    setActiveTab(id);
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="flex h-screen w-full bg-[#0B0F19] text-slate-100 font-sans overflow-hidden">
-      
-      {}
-      <aside className="w-72 bg-[#111827] border-r border-slate-800 flex flex-col shrink-0 select-none">
-        
+    // h-dvh = real visible height on mobile browsers (h-screen gets cut by the address bar)
+    <div className="flex h-dvh w-full bg-[#0B0F19] text-slate-100 font-sans overflow-hidden">
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* --- SIDEBAR (drawer on mobile, fixed column on md+) --- */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-[#111827] border-r border-slate-800 flex flex-col shrink-0 select-none transform transition-transform duration-300 md:static md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6D5A] to-[#E04B38] flex items-center justify-center shadow-lg shadow-[#FF6D5A]/20">
+        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6D5A] to-[#E04B38] flex items-center justify-center shadow-lg shadow-[#FF6D5A]/20 shrink-0">
               <Zap size={20} className="text-white fill-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-bold text-base tracking-wide text-white flex items-center gap-1.5">
                 n8n <span className="text-[#FF6D5A] font-extrabold">HUB</span>
               </h1>
               <p className="text-[10px] text-slate-400 font-mono tracking-wider">DOCS & REFERENCE</p>
             </div>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF6D5A]/10 text-[#FF6D5A] border border-[#FF6D5A]/30">
-            v1.0
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF6D5A]/10 text-[#FF6D5A] border border-[#FF6D5A]/30">
+              v1.0
+            </span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-800"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Menu */}
         <nav className="p-3 space-y-1.5 flex-grow overflow-y-auto">
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Documentation</p>
-
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all ${
-              activeTab === 'overview'
-                ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <BookOpen size={16} /> Architecture & Data Model
-          </button>
-
-          <button
-            onClick={() => setActiveTab('expressions')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all ${
-              activeTab === 'expressions'
-                ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <Brackets size={16} /> Expressions Cheatsheet
-          </button>
-
-          <button
-            onClick={() => setActiveTab('code')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all ${
-              activeTab === 'code'
-                ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <Code2 size={16} /> Code Node Snippets (JS)
-          </button>
-
-          <button
-            onClick={() => setActiveTab('nodes')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all ${
-              activeTab === 'nodes'
-                ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <Cpu size={16} /> Top Core Nodes Guide
-          </button>
-
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-6 mb-2">Production</p>
-
-          <button
-            onClick={() => setActiveTab('prod')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all ${
-              activeTab === 'prod'
-                ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-            }`}
-          >
-            <Server size={16} /> Self-Hosting & Best Practices
-          </button>
+          {NAV_SECTIONS.map((section, i) => (
+            <div key={section.label} className={i > 0 ? 'pt-4' : ''}>
+              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{section.label}</p>
+              <div className="space-y-1.5">
+                {section.items.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => selectTab(id)}
+                    className={`w-full flex items-center gap-3 px-3.5 py-3 md:py-2.5 rounded-xl font-medium text-xs transition-all text-left ${
+                      activeTab === id
+                        ? 'bg-[#FF6D5A]/15 text-[#FF6D5A] border border-[#FF6D5A]/30 font-semibold'
+                        : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    }`}
+                  >
+                    <Icon size={16} className="shrink-0" /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Sidebar Footer */}
@@ -645,21 +662,27 @@ export default function App() {
         </div>
       </aside>
 
-      {}
+      {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-grow flex flex-col min-w-0 bg-[#0B0F19] overflow-hidden">
-        
-        {/* Top Bar with Search & Quick Filter */}
-        <header className="h-16 border-b border-slate-800/80 bg-[#111827]/60 backdrop-blur-md px-6 flex items-center justify-between gap-4 shrink-0">
-          
-          {/* Live Search Bar */}
-          <div className="relative flex-grow max-w-lg">
+
+        {/* Top Bar with Search */}
+        <header className="h-14 sm:h-16 border-b border-slate-800/80 bg-[#111827]/60 backdrop-blur-md px-3 sm:px-6 flex items-center gap-2 sm:gap-4 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 shrink-0"
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+
+          <div className="relative flex-1 max-w-lg min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search expressions, JS methods, nodes, or configs..."
-              className="w-full bg-[#0B0F19] border border-slate-700/80 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#FF6D5A] transition-all shadow-inner"
+              placeholder="Search expressions, code, nodes..."
+              className="w-full bg-[#0B0F19] border border-slate-700/80 rounded-xl pl-10 pr-14 py-2.5 sm:py-2 text-base sm:text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#FF6D5A] transition-all shadow-inner"
             />
             {searchQuery && (
               <button
@@ -671,48 +694,47 @@ export default function App() {
             )}
           </div>
 
-          {/* Quick Header Badges */}
-          <div className="flex items-center gap-3">
-            <a
-              href="https://docs.n8n.io"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-[#FF6D5A] bg-slate-800/60 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-all border border-slate-700/50"
-            >
-              <span>Official Docs</span>
-              <ExternalLink size={12} />
-            </a>
-          </div>
+          <a
+            href="https://docs.n8n.io"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Official Docs"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-[#FF6D5A] bg-slate-800/60 hover:bg-slate-800 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg transition-all border border-slate-700/50 shrink-0"
+          >
+            <span className="hidden sm:inline">Official Docs</span>
+            <ExternalLink size={14} />
+          </a>
         </header>
 
         {/* Scrollable Content Body */}
-        <div className="flex-grow overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
+        <div ref={contentRef} className="flex-grow overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
 
-          {}
+          {/* ---------- OVERVIEW ---------- */}
           {activeTab === 'overview' && (
-            <div className="space-y-8 max-w-5xl">
+            <div className="space-y-6 md:space-y-8 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Workflow className="text-[#FF6D5A]" size={24} /> n8n Architecture & Core Data Model
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-start sm:items-center gap-2">
+                  <Workflow className="text-[#FF6D5A] shrink-0 mt-0.5 sm:mt-0" size={24} />
+                  <span>n8n Architecture & Core Data Model</span>
                 </h2>
                 <p className="text-slate-400 text-xs mt-1">
                   Understanding how data flows between nodes is fundamental to building reliable n8n automations.
                 </p>
               </div>
 
-              {/* Data Structure Card */}
-              <div className="bg-[#111827] border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                <h3 className="text-sm font-bold text-[#FF6D5A] uppercase tracking-wider flex items-center gap-2">
-                  <Database size={16} /> The Array-Of-Objects Rule (n8n JSON Contract)
+              <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+                <h3 className="text-xs sm:text-sm font-bold text-[#FF6D5A] uppercase tracking-wider flex items-start gap-2">
+                  <Database size={16} className="shrink-0 mt-0.5" />
+                  <span>The Array-Of-Objects Rule (n8n JSON Contract)</span>
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   In n8n, <strong>every node receives and outputs an array of items</strong>. Each item must be a JSON object containing a top-level <code className="text-cyan-400 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">json</code> key (and optionally a <code className="text-emerald-400 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">binary</code> key).
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
+                  <div className="bg-[#0B0F19] p-3 sm:p-4 rounded-xl border border-slate-800 min-w-0">
                     <p className="text-xs font-mono text-emerald-400 mb-2">// Valid n8n Internal Data Output</p>
-                    <pre className="text-[11px] font-mono text-slate-300 leading-relaxed overflow-x-auto">
+                    <pre className={`text-[11px] font-mono text-slate-300 leading-relaxed ${PRE_BASE}`}>
 {`[
   {
     "json": {
@@ -732,7 +754,7 @@ export default function App() {
                     </pre>
                   </div>
 
-                  <div className="bg-[#0B0F19] p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div className="bg-[#0B0F19] p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col justify-between min-w-0">
                     <div>
                       <p className="text-xs font-mono text-[#FF6D5A] mb-2">// Key Concept: Item Iteration</p>
                       <p className="text-xs text-slate-400 leading-relaxed">
@@ -751,9 +773,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Node Types Architecture */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-[#111827] border border-slate-800 rounded-2xl p-6 space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center">
                     <Radio size={20} />
                   </div>
@@ -763,7 +784,7 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="bg-[#111827] border border-slate-800 rounded-2xl p-6 space-y-3">
+                <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 flex items-center justify-center">
                     <Cpu size={20} />
                   </div>
@@ -776,25 +797,26 @@ export default function App() {
             </div>
           )}
 
-          {}
+          {/* ---------- EXPRESSIONS ---------- */}
           {activeTab === 'expressions' && (
-            <div className="space-y-6 max-w-5xl">
+            <div className="space-y-5 md:space-y-6 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Brackets className="text-cyan-400" size={24} /> n8n Expression Syntax Reference
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-start sm:items-center gap-2">
+                  <Brackets className="text-cyan-400 shrink-0 mt-0.5 sm:mt-0" size={24} />
+                  <span>n8n Expression Syntax Reference</span>
                 </h2>
                 <p className="text-slate-400 text-xs mt-1">
                   Use double curly braces <code className="text-cyan-400 font-mono">&#123;&#123; $json.property &#125;&#125;</code> inside any node parameter field to evaluate dynamic data.
                 </p>
               </div>
 
-              {/* Filter Tabs for Expressions */}
-              <div className="flex flex-wrap items-center gap-2 pb-2">
+              {/* Filter chips: horizontal scroll on mobile, wrap on larger screens */}
+              <div className="flex items-center gap-2 pb-2 overflow-x-auto sm:flex-wrap sm:overflow-visible -mx-4 px-4 sm:mx-0 sm:px-0">
                 {['All', 'Basic Data', 'Cross-Node Reference', 'Item References', 'Logic & Formatting', 'DateTime', 'System & Metadata'].map(cat => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
                       selectedCategory === cat
                         ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-semibold'
                         : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -805,21 +827,20 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Expression Cards List */}
               <div className="space-y-4">
                 {filteredExpressions.map(item => (
-                  <div key={item.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all shadow-lg space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2.5">
+                  <div key={item.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-slate-700 transition-all shadow-lg space-y-3 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                           {item.category}
                         </span>
                         <h3 className="text-sm font-bold text-slate-100">{item.title}</h3>
                       </div>
-                      
+
                       <button
                         onClick={() => handleCopy(item.expression, item.id)}
-                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/50 shrink-0"
+                        className="flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/50 shrink-0 w-full sm:w-auto"
                       >
                         {copiedId === item.id ? (
                           <>
@@ -837,47 +858,46 @@ export default function App() {
 
                     <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
 
-                    {/* Code Display */}
                     <div className="bg-[#0B0F19] rounded-xl p-3 border border-slate-800 font-mono text-xs text-cyan-300 overflow-x-auto">
                       <pre>{item.expression}</pre>
                     </div>
 
-                    {/* Example Box */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-                      <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                      <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 min-w-0">
                         <span className="text-slate-500 block font-mono text-[10px] uppercase">Input Data Context:</span>
-                        <span className="text-slate-300 font-mono">{item.exampleInput}</span>
+                        <span className="text-slate-300 font-mono break-words">{item.exampleInput}</span>
                       </div>
-                      <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                      <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 min-w-0">
                         <span className="text-slate-500 block font-mono text-[10px] uppercase">Evaluated Result:</span>
-                        <span className="text-emerald-400 font-mono">{item.exampleOutput}</span>
+                        <span className="text-emerald-400 font-mono break-words">{item.exampleOutput}</span>
                       </div>
                     </div>
                   </div>
                 ))}
+                {filteredExpressions.length === 0 && <EmptyState />}
               </div>
             </div>
           )}
 
-          {}
+          {/* ---------- CODE SNIPPETS ---------- */}
           {activeTab === 'code' && (
-            <div className="space-y-6 max-w-5xl">
+            <div className="space-y-5 md:space-y-6 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Code2 className="text-[#FF6D5A]" size={24} /> Code Node Snippets (JavaScript)
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-start sm:items-center gap-2">
+                  <Code2 className="text-[#FF6D5A] shrink-0 mt-0.5 sm:mt-0" size={24} />
+                  <span>Code Node Snippets (JavaScript)</span>
                 </h2>
                 <p className="text-slate-400 text-xs mt-1">
                   The Code Node allows raw JavaScript execution. Return arrays of items using standard <code className="text-[#FF6D5A] font-mono">$input.all()</code> and helper methods.
                 </p>
               </div>
 
-              {/* Code Snippets List */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {filteredCodeSnippets.map(snippet => (
-                  <div key={snippet.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition-all shadow-xl space-y-4">
-                    <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 pb-3">
-                      <div>
-                        <div className="flex items-center gap-2">
+                  <div key={snippet.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-6 hover:border-slate-700 transition-all shadow-xl space-y-4 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF6D5A]/10 text-[#FF6D5A] border border-[#FF6D5A]/20">
                             {snippet.category}
                           </span>
@@ -888,7 +908,7 @@ export default function App() {
 
                       <button
                         onClick={() => handleCopy(snippet.code, snippet.id)}
-                        className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-[#FF6D5A] hover:bg-[#FF6D5A]/90 text-white transition-all shadow-lg shadow-[#FF6D5A]/20 shrink-0"
+                        className="flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 py-2.5 sm:py-2 rounded-xl bg-[#FF6D5A] hover:bg-[#FF6D5A]/90 text-white transition-all shadow-lg shadow-[#FF6D5A]/20 shrink-0 w-full sm:w-auto"
                       >
                         {copiedId === snippet.id ? (
                           <>
@@ -904,29 +924,29 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* Syntax Highlighted Code Box */}
-                    <div className="bg-[#0B0F19] rounded-xl p-4 border border-slate-800/90 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
+                    <div className="bg-[#0B0F19] rounded-xl p-3 sm:p-4 border border-slate-800/90 font-mono text-[11px] sm:text-xs text-slate-200 overflow-x-auto leading-relaxed">
                       <pre className="text-cyan-300">{snippet.code}</pre>
                     </div>
                   </div>
                 ))}
+                {filteredCodeSnippets.length === 0 && <EmptyState />}
               </div>
             </div>
           )}
 
-          {}
+          {/* ---------- CORE NODES ---------- */}
           {activeTab === 'nodes' && (
-            <div className="space-y-6 max-w-5xl">
+            <div className="space-y-5 md:space-y-6 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Cpu className="text-purple-400" size={24} /> Top Must-Know Core Nodes
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-start sm:items-center gap-2">
+                  <Cpu className="text-purple-400 shrink-0 mt-0.5 sm:mt-0" size={24} />
+                  <span>Top Must-Know Core Nodes</span>
                 </h2>
                 <p className="text-slate-400 text-xs mt-1">
                   In-depth reference for n8n's foundational workflow control nodes.
                 </p>
               </div>
 
-              {/* Accordion Node Cards */}
               <div className="space-y-4">
                 {filteredCoreNodes.map(node => {
                   const NodeIcon = node.icon;
@@ -934,40 +954,41 @@ export default function App() {
 
                   return (
                     <div key={node.id} className="bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden shadow-xl transition-all">
-                      
-                      {/* Node Header */}
+
                       <div
                         onClick={() => toggleNodeExpand(node.id)}
-                        className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-all select-none"
+                        className="p-4 sm:p-5 flex items-start sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-800/40 transition-all select-none"
                       >
-                        <div className="flex items-center gap-3.5">
-                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${node.color} flex items-center justify-center text-white shadow-md`}>
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${node.color} flex items-center justify-center text-white shadow-md shrink-0`}>
                             <NodeIcon size={20} />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <h3 className="text-sm font-bold text-slate-100">{node.name}</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">{node.summary}</p>
+                            <span className="sm:hidden inline-block text-[10px] font-mono font-semibold px-2 py-0.5 mt-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                              {node.type}
+                            </span>
+                            <p className="text-xs text-slate-400 mt-1 sm:mt-0.5">{node.summary}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="hidden sm:inline-block text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                             {node.type}
                           </span>
                           {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
                         </div>
                       </div>
 
-                      {/* Expanded Details */}
                       {isExpanded && (
-                        <div className="p-5 pt-0 border-t border-slate-800/60 bg-[#0d1322]/40 space-y-4">
+                        <div className="p-4 sm:p-5 pt-0 border-t border-slate-800/60 bg-[#0d1322]/40 space-y-4">
                           <div>
                             <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 pt-3">Key Features & Patterns</h4>
                             <ul className="space-y-1.5">
                               {node.keyFeatures.map((feat, idx) => (
                                 <li key={idx} className="text-xs text-slate-400 flex items-start gap-2">
                                   <span className="text-purple-400 mt-1">•</span>
-                                  <span>{feat}</span>
+                                  <span className="min-w-0">{feat}</span>
                                 </li>
                               ))}
                             </ul>
@@ -978,13 +999,13 @@ export default function App() {
                               <h4 className="text-[11px] font-mono text-purple-400 font-semibold">Configuration Example</h4>
                               <button
                                 onClick={() => handleCopy(node.configSnippet, node.id)}
-                                className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1"
+                                className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 p-1"
                               >
                                 {copiedId === node.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                                 <span>Copy Config</span>
                               </button>
                             </div>
-                            <pre className="bg-[#0B0F19] p-3 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto">
+                            <pre className={`bg-[#0B0F19] p-3 rounded-xl border border-slate-800 font-mono text-[11px] sm:text-xs text-slate-300 ${PRE_BASE}`}>
                               {node.configSnippet}
                             </pre>
                           </div>
@@ -993,33 +1014,35 @@ export default function App() {
                     </div>
                   );
                 })}
+                {filteredCoreNodes.length === 0 && <EmptyState />}
               </div>
             </div>
           )}
 
-          {}
+          {/* ---------- PRODUCTION ---------- */}
           {activeTab === 'prod' && (
-            <div className="space-y-6 max-w-5xl">
+            <div className="space-y-5 md:space-y-6 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Server className="text-emerald-400" size={24} /> Self-Hosting & Production Best Practices
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-start sm:items-center gap-2">
+                  <Server className="text-emerald-400 shrink-0 mt-0.5 sm:mt-0" size={24} />
+                  <span>Self-Hosting & Production Best Practices</span>
                 </h2>
                 <p className="text-slate-400 text-xs mt-1">
                   Ensure 99.9% uptime, avoid database ballooning, and harden webhook security for mission-critical workflows.
                 </p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {filteredProdGuides.map(guide => {
                   const GuideIcon = guide.icon;
                   return (
-                    <div key={guide.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                      <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 pb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <div key={guide.id} className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                             <GuideIcon size={20} />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                               {guide.category}
                             </span>
@@ -1029,7 +1052,7 @@ export default function App() {
 
                         <button
                           onClick={() => handleCopy(guide.configSnippet, guide.id)}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700/60 shrink-0"
+                          className="flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 py-2.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700/60 shrink-0 w-full sm:w-auto"
                         >
                           {copiedId === guide.id ? (
                             <>
@@ -1047,18 +1070,27 @@ export default function App() {
 
                       <p className="text-xs text-slate-400 leading-relaxed">{guide.description}</p>
 
-                      <pre className="bg-[#0B0F19] p-4 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
+                      <pre className={`bg-[#0B0F19] p-3 sm:p-4 rounded-xl border border-slate-800 font-mono text-[11px] sm:text-xs text-emerald-300 leading-relaxed ${PRE_BASE}`}>
                         {guide.configSnippet}
                       </pre>
                     </div>
                   );
                 })}
+                {filteredProdGuides.length === 0 && <EmptyState />}
               </div>
             </div>
           )}
 
         </div>
       </main>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-2xl py-10 px-4">
+      No results found. Try a different search term or clear the filter.
     </div>
   );
 }

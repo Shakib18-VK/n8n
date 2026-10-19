@@ -36,7 +36,6 @@ export default function N8nDashboard() {
 
   // Handler for creating a workflow and redirecting to the builder or workflow page
   const handleCreateWorkflow = () => {
-    // Aap yahan apni workflow builder page ka route de sakte hain (jaise /workflows/new ya /builder)
     router.push("/workflows");
   };
 
@@ -60,8 +59,8 @@ export default function N8nDashboard() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden text-slate-800">
       
-      {/* --- SIDEBAR --- */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex z-20">
+      {/* --- SIDEBAR (Hidden on mobile, visible on medium+ screens) --- */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex-col justify-between hidden md:flex z-20 shrink-0">
         <div>
           {/* Logo Brand */}
           <div className="flex items-center gap-2.5 px-6 py-5 border-b border-slate-100">
@@ -134,27 +133,27 @@ export default function N8nDashboard() {
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-y-auto w-full">
         
         {/* Top Navbar */}
-        <header className="flex justify-between items-center px-8 py-4 bg-white border-b border-slate-200 sticky top-0 z-10">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-4 sm:px-8 py-4 bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-black text-slate-900 tracking-tight">
-              {activeTab === 'overview' && 'Dashboard & System Analytics'}
+            <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              {activeTab === 'overview' && 'Dashboard & Analytics'}
               {activeTab === 'workflows' && 'Workflow Automation Engine'}
               {activeTab === 'nodes' && 'Neural AI Node Manager'}
               {activeTab === 'executions' && 'Real-Time Execution Logs'}
               {activeTab === 'credentials' && 'API Keys & Secrets Vault'}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
             <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer">
               <RefreshCcw size={13} />
-              <span>Sync Nodes</span>
+              <span className="hidden xs:inline">Sync Nodes</span>
             </button>
             <button 
               onClick={handleCreateWorkflow}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
             >
               <Plus size={15} />
               <span>Create Workflow</span>
@@ -163,11 +162,11 @@ export default function N8nDashboard() {
         </header>
 
         {/* Dynamic Panel Content */}
-        <div className="p-8 space-y-6 max-w-7xl w-full mx-auto">
+        <div className="p-4 sm:p-8 space-y-6 max-w-7xl w-full mx-auto">
           
           {/* STATS CARDS GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="p-5 bg-white border border-slate-200/85 rounded-2xl shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-[11px] font-black uppercase tracking-wider">Total Workflows</span>
                 <Workflow size={18} className="text-blue-500" />
@@ -178,7 +177,7 @@ export default function N8nDashboard() {
               </div>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="p-5 bg-white border border-slate-200/85 rounded-2xl shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-[11px] font-black uppercase tracking-wider">Executions (24h)</span>
                 <Activity size={18} className="text-indigo-500" />
@@ -189,7 +188,7 @@ export default function N8nDashboard() {
               </div>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="p-5 bg-white border border-slate-200/85 rounded-2xl shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-[11px] font-black uppercase tracking-wider">AI Agent Nodes</span>
                 <Cpu size={18} className="text-amber-500" />
@@ -200,7 +199,7 @@ export default function N8nDashboard() {
               </div>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="p-5 bg-white border border-slate-200/85 rounded-2xl shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-[11px] font-black uppercase tracking-wider">Avg Latency</span>
                 <Clock size={18} className="text-emerald-500" />
@@ -216,14 +215,14 @@ export default function N8nDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Workflows List Table (2 Columns wide) */}
-            <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
+            <div className="lg:col-span-2 bg-white border border-slate-200/85 rounded-2xl shadow-xs p-4 sm:p-6 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Active Automation Pipelines</h3>
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Active Automation Pipelines</h3>
                 <Link href="/workflows" className="text-xs font-bold text-blue-600 hover:underline cursor-pointer">View All</Link>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left text-xs min-w-[500px]">
                   <thead>
                     <tr className="border-b border-slate-100 text-slate-400 font-black uppercase tracking-wider">
                       <th className="pb-3">Workflow Name</th>
@@ -236,9 +235,9 @@ export default function N8nDashboard() {
                   <tbody className="divide-y divide-slate-100">
                     {workflows.map((wf) => (
                       <tr key={wf.id} onClick={() => router.push("/workflows")} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
-                        <td className="py-3 font-bold text-slate-800 flex items-center gap-2">
-                          <Layers size={14} className="text-blue-500" />
-                          <span>{wf.name}</span>
+                        <td className="py-3 font-bold text-slate-800 flex items-center gap-2 max-w-[180px] sm:max-w-xs truncate">
+                          <Layers size={14} className="text-blue-500 shrink-0" />
+                          <span className="truncate">{wf.name}</span>
                         </td>
                         <td className="py-3 font-medium text-slate-500">{wf.trigger}</td>
                         <td className="py-3">
@@ -260,21 +259,21 @@ export default function N8nDashboard() {
             </div>
 
             {/* Live Execution Stream (1 Column wide) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6 flex flex-col justify-between">
+            <div className="bg-white border border-slate-200/85 rounded-2xl shadow-xs p-4 sm:p-6 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Live Execution Stream</h3>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Live Execution Stream</h3>
                   <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 </div>
 
                 <div className="space-y-3">
                   {executionLogs.map((log) => (
-                    <div key={log.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-800 truncate max-w-[160px]">{log.workflow}</span>
+                    <div key={log.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-slate-800 truncate">{log.workflow}</span>
                         <span className="text-[10px] font-semibold text-slate-400">{log.time} • {log.duration}</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase shrink-0 ${
                         log.status === 'Success' ? 'text-emerald-600 bg-emerald-100/50' : 'text-rose-600 bg-rose-100/50'
                       }`}>
                         {log.status}
@@ -292,9 +291,9 @@ export default function N8nDashboard() {
           </div>
 
           {/* BOTTOM QUICK ACTIONS BANNER */}
-          <div className="p-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="p-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
             <div>
-              <h3 className="text-base font-black tracking-tight mb-1">Need to build custom n8n nodes or webhooks?</h3>
+              <h3 className="text-sm sm:text-base font-black tracking-tight mb-1">Need to build custom n8n nodes or webhooks?</h3>
               <p className="text-xs text-blue-100 font-medium">Connect external APIs, deploy autonomous workers, and manage state seamlessly.</p>
             </div>
             <button 
